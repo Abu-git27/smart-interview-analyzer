@@ -1,16 +1,12 @@
-import os
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
-
-    
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import os
 
 from emotion import detect_interview_emotion
 from scoring import calculate_score
 from feedback import generate_feedback
 
+# ✅ FIRST create app
 app = Flask(__name__)
 CORS(app)
 
@@ -20,17 +16,15 @@ def home():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    print("--- BUTTON CLICKED! MESSAGE RECEIVED ---")
-
     data = request.get_json()
     text = data.get('text', '')
 
-    # ---------------- NLP ANALYSIS ----------------
+    # NLP
     words = text.split()
     word_count = len(words)
 
     sentences = text.split('.')
-    sentence_lengths = [len(s.split()) for s in sentences if s.strip() != ""]
+    sentence_lengths = [len(s.split()) for s in sentences if s.strip()]
     avg_sentence_length = sum(sentence_lengths)/len(sentence_lengths) if sentence_lengths else 0
 
     nlp = {
@@ -38,9 +32,8 @@ def analyze():
         "avg_sentence_length": avg_sentence_length
     }
 
-    # ---------------- EMOTION ----------------
+    # Emotion
     emotion = detect_interview_emotion(text)
-
     confidence_score = (emotion["score"] + 1) / 2
 
     emotion_data = {
@@ -48,20 +41,18 @@ def analyze():
         "confidence_score": confidence_score
     }
 
-    # ---------------- SCORING ----------------
+    # Score
     score = calculate_score(nlp, emotion_data)
 
-    # ---------------- FEEDBACK ----------------
+    # Feedback
     feedback = generate_feedback(nlp, emotion, score)
 
     return jsonify({
         "emotion_analysis": emotion,
-        "nlp_analysis": nlp,
-        "final_score": {
-            "total": score
-        },
+        "final_score": {"total": score},
         "feedback": feedback
     })
 
+# ✅ RUN AT LAST (VERY IMPORTANT)
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
